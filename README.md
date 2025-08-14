@@ -8,7 +8,7 @@ An Extended and Modular Plugin based version of Lyra Camera for Unreal Engine 5,
 To Install simply place the OmniaCamera Folder in your "ProjectDirectory/Pluigns" folder.  
 Check if the Plugin is Enabled In your Project Plugin window:  
 <p align="center">
-  <img src="Docs/PluginsWindow.jpg"/>
+  <img src="Docs/PluginsWindow.png"/>
 </p>
   
 
@@ -33,15 +33,15 @@ There are two Vector Curves that control the Positions of Camera Veiw in Third P
 
 - First Add the Omnia Camera Component to your Character or Pawn (No Need to Add Spring Arm).  
 <p align="center">
-  <img src="Docs/OmniaCameraComp.jpg"/>
+  <img src="Docs/OmniaCameraComp.png"/>
 </p>  
 
 - You can also set the default Camera Mode inside the Omnia Camera Component:  
 <p align="center">
-  <img src="Docs/DefaultCamera.jpg"/>
+  <img src="Docs/DefaultCamera.png"/>
 </p>  
 
 - To Change the Camera Mode Simply Call this function using the Omnia Camera Component Reference:  
 <p align="center">
-  <img src="Docs/SetCameraMode.jpg"/>
+  <img src="Docs/SetCameraMode.png"/>
 </p>  
