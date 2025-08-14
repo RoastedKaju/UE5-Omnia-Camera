@@ -5,7 +5,7 @@ An Extended and Modular Plugin based version of Lyra Camera for Unreal Engine 5,
 
 ## 💾 Install
 
-To Install simply place the OmniaCamera Folder in your "ProjectDirectory/Pluigns" folder.  
+To Install simply place the OmniaCamera Folder in your **"ProjectDirectory/Pluigns"** folder.  
 Check if the Plugin is Enabled In your Project Plugin window:  
 <p align="center">
   <img src="Docs/PluginsWindow.png"/>
@@ -20,7 +20,7 @@ Check if the Plugin is Enabled In your Project Plugin window:
 - Utility Functions to Clear and Swap out Camera Modes.  
 - You can extend the **"OmniaCameraMode"** Class to make your Own Camera Modes Just by Following Any Lyra Camera Tutorial.  
 
-## Camera Modes
+## 🎞️ Camera Modes
 
 Currently This Plugin comes with 3 Camera Modes:  
 - First Person  
