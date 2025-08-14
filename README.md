@@ -18,7 +18,7 @@ Check if the Plugin is Enabled In your Project Plugin window:
 - Blueprint Spawnable Component.  
 - Modular and Decoupled from GAS and Lyra related Classes.  
 - Utility Functions to Clear and Swap out Camera Modes.  
-- You can extend the "OmniaCameraMode" Class to make your Own Camera Modes Just by Following Any Lyra Camera Tutorial.  
+- You can extend the **"OmniaCameraMode"** Class to make your Own Camera Modes Just by Following Any Lyra Camera Tutorial.  
 
 ## Camera Modes
 
@@ -31,7 +31,7 @@ There are two Vector Curves that control the Positions of Camera Veiw in Third P
 
 ## 🖥️ Setup
 
-- First Add the Omnia Camera Component to your Character or Pawn (No Need to Add Spring Arm).  
+- First Add the Omnia Camera Component to your Character or Pawn **(No Need to Add Spring Arm)**.  
 <p align="center">
   <img src="Docs/OmniaCameraComp.png"/>
 </p>  
