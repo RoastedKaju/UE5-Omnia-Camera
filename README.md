@@ -1,5 +1,4 @@
-﻿﻿
-# 🎥 Omnia Camera System
+﻿﻿# 🎥 Omnia Camera System
 
 An Extended and Modular Plugin based version of Lyra Camera for Unreal Engine 5, Blueprint Friendly And Can be used without GAS.  
 
