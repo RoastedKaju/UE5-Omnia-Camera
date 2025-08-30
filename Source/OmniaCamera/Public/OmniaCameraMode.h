@@ -32,7 +32,7 @@ enum class EOmniaCameraModeBlendFunction : uint8
 	// Smoothly accelerates and decelerates.  Ease amount controlled by the exponent.
 	EaseInOut,
 
-	COUNT	UMETA(Hidden)
+	COUNT UMETA(Hidden)
 };
 
 /**
@@ -63,7 +63,6 @@ class OMNIACAMERA_API UOmniaCameraMode : public UObject
 	GENERATED_BODY()
 
 public:
-
 	UOmniaCameraMode();
 
 	UOmniaCameraComponent* GetOmniaCameraComponent() const;
@@ -75,16 +74,30 @@ public:
 	const FOmniaCameraModeView& GetCameraModeView() const { return View; }
 
 	// Called when this camera mode is activated on the camera mode stack.
-	UFUNCTION(BlueprintNativeEvent, Category = "Omnia|Camera")
+	UFUNCTION(BlueprintNativeEvent, Category = "Omnia|Camera", meta=(DisplayName="On Activation"))
 	void OnActivation();
-	virtual void OnActivation_Implementation() {};
+
+	virtual void OnActivation_Implementation()
+	{
+	};
 
 	// Called when this camera mode is deactivated on the camera mode stack.
-	UFUNCTION(BlueprintNativeEvent, Category = "Omnia|Camera")
+	UFUNCTION(BlueprintNativeEvent, Category = "Omnia|Camera", meta=(DisplayName="On Deactivation"))
 	void OnDeactivation();
-	virtual void OnDeactivation_Implementation() {};
+
+	virtual void OnDeactivation_Implementation()
+	{
+	};
 
 	void UpdateCameraMode(float DeltaTime);
+
+	/** 
+	 * Blueprint hook to allow blueprints to override existing camera behavior or implement custom cameras.
+	 * If this function returns true, we will use the given returned values and skip further calculations to determine
+	 * final camera POV. 
+	 */
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCosmetic, Category="Omnia|Camera", meta=(DisplayName="Blueprint Update Camera"))
+	bool BlueprintUpdateCamera(FVector& OutLocation, FRotator& OutRotation, FRotator& OutControlRotation, float& OutFieldOfView);
 
 	float GetBlendTime() const { return BlendTime; }
 	float GetBlendWeight() const { return BlendWeight; }
@@ -98,13 +111,14 @@ public:
 	virtual void DrawDebug(UCanvas* Canvas) const;
 
 protected:
-
+	UFUNCTION(BlueprintPure, Category="Omnia|Camera")
 	virtual FVector GetPivotLocation() const;
+	UFUNCTION(BlueprintPure, Category="Omnia|Camera")
 	virtual FRotator GetPivotRotation() const;
 
 	virtual void UpdateView(float DeltaTime);
 	virtual void UpdateBlending(float DeltaTime);
-	
+
 	// A tag that can be queried by gameplay code that cares when a kind of camera mode is active
 	// without having to ask about a specific mode (e.g., when aiming downsights to get more accuracy)
 	UPROPERTY(EditDefaultsOnly, Category = "Blending")
@@ -114,15 +128,15 @@ protected:
 	FOmniaCameraModeView View;
 
 	// The horizontal field of view (in degrees).
-	UPROPERTY(EditDefaultsOnly, Category = "View", Meta = (UIMin = "5.0", UIMax = "170", ClampMin = "5.0", ClampMax = "170.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "View", Meta = (UIMin = "5.0", UIMax = "170", ClampMin = "5.0", ClampMax = "170.0"))
 	float FieldOfView;
 
 	// Minimum view pitch (in degrees).
-	UPROPERTY(EditDefaultsOnly, Category = "View", Meta = (UIMin = "-89.9", UIMax = "89.9", ClampMin = "-89.9", ClampMax = "89.9"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "View", Meta = (UIMin = "-89.9", UIMax = "89.9", ClampMin = "-89.9", ClampMax = "89.9"))
 	float ViewPitchMin;
 
 	// Maximum view pitch (in degrees).
-	UPROPERTY(EditDefaultsOnly, Category = "View", Meta = (UIMin = "-89.9", UIMax = "89.9", ClampMin = "-89.9", ClampMax = "89.9"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "View", Meta = (UIMin = "-89.9", UIMax = "89.9", ClampMin = "-89.9", ClampMax = "89.9"))
 	float ViewPitchMax;
 
 	// How long it takes to blend in this mode.
@@ -142,10 +156,10 @@ protected:
 
 	// Blend weight calculated using the blend alpha and function.
 	float BlendWeight;
-	
+
 	/** If true, skips all interpolation and puts camera in ideal location.  Automatically set to false next frame. */
 	UPROPERTY(transient)
-	uint32 bResetInterpolation:1;
+	uint32 bResetInterpolation : 1;
 };
 
 /**
@@ -159,7 +173,6 @@ class UOmniaCameraModeStack : public UObject
 	GENERATED_BODY()
 
 public:
-
 	UOmniaCameraModeStack();
 
 	void ActivateStack();
@@ -177,7 +190,6 @@ public:
 	void GetBlendInfo(float& OutWeightOfTopLayer, FGameplayTag& OutTagOfTopLayer) const;
 
 protected:
-
 	UOmniaCameraMode* GetCameraModeInstance(TSubclassOf<UOmniaCameraMode> CameraModeClass);
 
 	void UpdateStack(float DeltaTime);

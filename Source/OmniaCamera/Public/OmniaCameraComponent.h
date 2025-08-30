@@ -46,7 +46,6 @@ public:
 	virtual AActor* GetTargetActor() const { return GetOwner(); }
 
 	// Delegate used to query for the best camera mode.
-	// UPROPERTY(BlueprintAssignable, Category = "Omnia|Camera")
 	FOmniaCameraModeDelegate DetermineCameraModeDelegate;
 
 	// Add an offset to the field of view.  The offset is only for one frame, it gets cleared once it is applied.

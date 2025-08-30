@@ -16,9 +16,9 @@
 //////////////////////////////////////////////////////////////////////////
 FOmniaCameraModeView::FOmniaCameraModeView()
 	: Location(ForceInit)
-	, Rotation(ForceInit)
-	, ControlRotation(ForceInit)
-	, FieldOfView(OMNIA_CAMERA_DEFAULT_FOV)
+	  , Rotation(ForceInit)
+	  , ControlRotation(ForceInit)
+	  , FieldOfView(OMNIA_CAMERA_DEFAULT_FOV)
 {
 }
 
@@ -50,6 +50,7 @@ void FOmniaCameraModeView::Blend(const FOmniaCameraModeView& Other, float OtherW
 //////////////////////////////////////////////////////////////////////////
 UOmniaCameraMode::UOmniaCameraMode()
 {
+	bResetInterpolation = true;
 	FieldOfView = OMNIA_CAMERA_DEFAULT_FOV;
 	ViewPitchMin = OMNIA_CAMERA_DEFAULT_PITCH_MIN;
 	ViewPitchMax = OMNIA_CAMERA_DEFAULT_PITCH_MAX;
@@ -125,7 +126,22 @@ FRotator UOmniaCameraMode::GetPivotRotation() const
 
 void UOmniaCameraMode::UpdateCameraMode(float DeltaTime)
 {
-	UpdateView(DeltaTime);
+	FVector OutViewLocation;
+	FRotator OutViewRotation;
+	FRotator OutControlRotation;
+	float OutFieldOfView = 80.0f;
+
+	if (BlueprintUpdateCamera(OutViewLocation, OutViewRotation, OutControlRotation, OutFieldOfView))
+	{
+		View.Location = OutViewLocation;
+		View.Rotation = OutViewRotation;
+		View.ControlRotation = OutControlRotation;
+		View.FieldOfView = OutFieldOfView;
+	}
+	else
+	{
+		UpdateView(DeltaTime);
+	}
 	UpdateBlending(DeltaTime);
 }
 

@@ -23,6 +23,8 @@ namespace OmniaCameraMode_ThirdPerson_Statics
 
 UOmniaCameraMode_ThirdPerson::UOmniaCameraMode_ThirdPerson()
 {
+	bPreventPenetration = true;
+	bDoPredictiveAvoidance = false;
 	TargetOffsetCurve = nullptr;
 
 	PenetrationAvoidanceFeelers.Add(FOmniaPenetrationAvoidanceFeeler(FRotator(+00.0f, +00.0f, 0.0f), 1.00f, 1.00f, 14.f, 0));
@@ -39,45 +41,13 @@ void UOmniaCameraMode_ThirdPerson::OnActivation_Implementation()
 	UpdateForTarget(GetWorld()->DeltaTimeSeconds);
 	CurrentCrouchOffset = TargetCrouchOffset;
 	CrouchOffsetBlendPct = 1.0f;
+
+	UpdateDesiredArmLocation(false, false, 0.f);
 }
 
 void UOmniaCameraMode_ThirdPerson::UpdateView(float DeltaTime)
 {
-	UpdateForTarget(DeltaTime);
-	UpdateCrouchOffset(DeltaTime);
-
-	FVector PivotLocation = GetPivotLocation() + CurrentCrouchOffset;
-	FRotator PivotRotation = GetPivotRotation();
-
-	PivotRotation.Pitch = FMath::ClampAngle(PivotRotation.Pitch, ViewPitchMin, ViewPitchMax);
-
-	View.Location = PivotLocation;
-	View.Rotation = PivotRotation;
-	View.ControlRotation = View.Rotation;
-	View.FieldOfView = FieldOfView;
-
-	// Apply third person offset using pitch.
-	if (!bUseRuntimeFloatCurves)
-	{
-		if (TargetOffsetCurve)
-		{
-			const FVector TargetOffset = TargetOffsetCurve->GetVectorValue(PivotRotation.Pitch);
-			View.Location = PivotLocation + PivotRotation.RotateVector(TargetOffset * ZoomDistanceMultiplier);
-		}
-	}
-	else
-	{
-		FVector TargetOffset(0.0f);
-
-		TargetOffset.X = TargetOffsetX.GetRichCurveConst()->Eval(PivotRotation.Pitch);
-		TargetOffset.Y = TargetOffsetY.GetRichCurveConst()->Eval(PivotRotation.Pitch);
-		TargetOffset.Z = TargetOffsetZ.GetRichCurveConst()->Eval(PivotRotation.Pitch);
-
-		View.Location = PivotLocation + PivotRotation.RotateVector(TargetOffset);
-	}
-
-	// Adjust final desired camera location to prevent any penetration
-	UpdatePreventPenetration(DeltaTime);
+	UpdateDesiredArmLocation(bEnableCameraLag, bEnableCameraRotationLag, DeltaTime);
 }
 
 void UOmniaCameraMode_ThirdPerson::UpdateForTarget(float DeltaTime)
@@ -108,8 +78,8 @@ void UOmniaCameraMode_ThirdPerson::DrawDebug(UCanvas* Canvas) const
 	{
 		DisplayDebugManager.DrawString(
 			FString::Printf(TEXT("HitActorDuringPenetration[%d]: %s")
-				, i
-				, *DebugActorsHitDuringCameraPenetration[i]->GetName()));
+			                , i
+			                , *DebugActorsHitDuringCameraPenetration[i]->GetName()));
 	}
 
 	LastDrawDebugTime = GetWorld()->GetTimeSeconds();
@@ -142,7 +112,7 @@ void UOmniaCameraMode_ThirdPerson::UpdatePreventPenetration(float DeltaTime)
 		// Our camera is our reticle, so we want to preserve our aim and keep that as steady and smooth as possible.
 		// Pick the closest point on capsule to our aim line.
 		FVector ClosestPointOnLineToCapsuleCenter;
-		FVector SafeLocation = PPActor->GetActorLocation();
+		FVector SafeLocation = PreviousDesiredLoc;
 		FMath::PointDistToLine(SafeLocation, View.Rotation.Vector(), View.Location, ClosestPointOnLineToCapsuleCenter);
 
 		// Adjust Safe distance height to be same as aim line, but within capsule.
@@ -162,7 +132,7 @@ void UOmniaCameraMode_ThirdPerson::UpdatePreventPenetration(float DeltaTime)
 		bool const bSingleRayPenetrationCheck = !bDoPredictiveAvoidance;
 		PreventCameraPenetration(*PPActor, SafeLocation, View.Location, DeltaTime, AimLineToDesiredPosBlockedPct, bSingleRayPenetrationCheck);
 
-		IOmniaCameraAssistInterface* AssistArray[] = { TargetControllerAssist, TargetActorAssist, PPActorAssist };
+		IOmniaCameraAssistInterface* AssistArray[] = {TargetControllerAssist, TargetActorAssist, PPActorAssist};
 
 		if (AimLineToDesiredPosBlockedPct < ReportPenetrationPercent)
 		{
@@ -219,7 +189,7 @@ void UOmniaCameraMode_ThirdPerson::PreventCameraPenetration(class AActor const& 
 			// cast for world and pawn hits separately.  this is so we can safely ignore the 
 			// camera's target pawn
 			SphereShape.Sphere.Radius = Feeler.Extent;
-			ECollisionChannel TraceChannel = ECC_Camera;		//(Feeler.PawnWeight > 0.f) ? ECC_Pawn : ECC_Camera;
+			ECollisionChannel TraceChannel = ECC_Camera; //(Feeler.PawnWeight > 0.f) ? ECC_Pawn : ECC_Camera;
 
 			// do multi-line check to make sure the hits we throw out aren't
 			// masking real hits behind (these are important rays).
@@ -271,7 +241,7 @@ void UOmniaCameraMode_ThirdPerson::PreventCameraPenetration(class AActor const& 
 #endif
 					}
 				}
-				
+
 				if (!bIgnoreHit)
 				{
 					float const Weight = Cast<APawn>(Hit.GetActor()) ? Feeler.PawnWeight : Feeler.WorldWeight;
@@ -371,4 +341,121 @@ void UOmniaCameraMode_ThirdPerson::UpdateCrouchOffset(float DeltaTime)
 		CurrentCrouchOffset = TargetCrouchOffset;
 		CrouchOffsetBlendPct = 1.0f;
 	}
+}
+
+void UOmniaCameraMode_ThirdPerson::UpdateDesiredArmLocation(bool bDoLocationLag, bool bDoRotationLag, float DeltaTime)
+{
+	UpdateForTarget(DeltaTime);
+	UpdateCrouchOffset(DeltaTime);
+
+	FVector PivotLocation = GetPivotLocation() + CurrentCrouchOffset;
+	FRotator PivotRotation = GetPivotRotation();
+
+	PivotRotation.Pitch = FMath::ClampAngle(PivotRotation.Pitch, ViewPitchMin, ViewPitchMax);
+
+	View.Location = PivotLocation;
+	View.Rotation = PivotRotation;
+	View.ControlRotation = View.Rotation;
+	View.FieldOfView = FieldOfView;
+
+	FRotator DesiredRotation = PivotRotation;
+	if (bDoRotationLag)
+	{
+		if (bUseCameraLagSubstepping && DeltaTime > CameraLagMaxTimeStep && CameraRotationLagSpeed > 0.f)
+		{
+			const FRotator ArmRotStep = (DesiredRotation - PreviousDesiredRot).GetNormalized() * (1.f / DeltaTime);
+			FRotator LerpTarget = PreviousDesiredRot;
+			float RemainingTime = DeltaTime;
+			while (RemainingTime > UE_KINDA_SMALL_NUMBER)
+			{
+				const float LerpAmount = FMath::Min(CameraLagMaxTimeStep, RemainingTime);
+				LerpTarget += ArmRotStep * LerpAmount;
+				RemainingTime -= LerpAmount;
+
+				DesiredRotation = FRotator(FMath::QInterpTo(FQuat(PreviousDesiredRot), FQuat(LerpTarget), LerpAmount, CameraRotationLagSpeed));
+				PreviousDesiredRot = DesiredRotation;
+			}
+		}
+		else
+		{
+			DesiredRotation = FRotator(FMath::QInterpTo(FQuat(PreviousDesiredRot), FQuat(DesiredRotation), DeltaTime, CameraRotationLagSpeed));
+		}
+	}
+	PreviousDesiredRot = DesiredRotation;
+	PivotRotation = DesiredRotation;
+
+	// We lag the target, not the actual camera position, so rotating the camera around does not have lag
+	FVector DesiredLocation = PivotLocation;
+	if (bDoLocationLag)
+	{
+		if (bUseCameraLagSubstepping && DeltaTime > CameraLagMaxTimeStep && CameraLagSpeed > 0.f)
+		{
+			const FVector ArmMovementStep = (DesiredLocation - PreviousDesiredLoc) * (1.f / DeltaTime);
+			FVector LerpTarget = PreviousDesiredLoc;
+
+			float RemainingTime = DeltaTime;
+			while (RemainingTime > UE_KINDA_SMALL_NUMBER)
+			{
+				const float LerpAmount = FMath::Min(CameraLagMaxTimeStep, RemainingTime);
+				LerpTarget += ArmMovementStep * LerpAmount;
+				RemainingTime -= LerpAmount;
+
+				DesiredLocation = FMath::VInterpTo(PreviousDesiredLoc, LerpTarget, LerpAmount, CameraLagSpeed);
+				PreviousDesiredLoc = DesiredLocation;
+			}
+		}
+		else
+		{
+			DesiredLocation = FMath::VInterpTo(PreviousDesiredLoc, DesiredLocation, DeltaTime, CameraLagSpeed);
+		}
+
+		// Clamp distance if requested
+		bool bClampedDist = false;
+		if (CameraLagMaxDistance > 0.f)
+		{
+			const FVector FromOrigin = DesiredLocation - PivotLocation;
+			if (FromOrigin.SizeSquared() > FMath::Square(CameraLagMaxDistance))
+			{
+				DesiredLocation = PivotLocation + FromOrigin.GetClampedToMaxSize(CameraLagMaxDistance);
+				bClampedDist = true;
+			}
+		}		
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		if (bDrawDebugLagMarkers)
+		{
+			DrawDebugSphere(GetWorld(), PivotLocation, 5.f, 8, FColor::Green);
+			DrawDebugSphere(GetWorld(), DesiredLocation, 5.f, 8, FColor::Yellow);
+
+			const FVector ToOrigin = PivotLocation - DesiredLocation;
+			DrawDebugDirectionalArrow(GetWorld(), DesiredLocation, DesiredLocation + ToOrigin * 0.5f, 7.5f, bClampedDist ? FColor::Red : FColor::Green);
+			DrawDebugDirectionalArrow(GetWorld(), DesiredLocation + ToOrigin * 0.5f, PivotLocation,  7.5f, bClampedDist ? FColor::Red : FColor::Green);
+		}
+#endif
+	}
+	
+	PreviousDesiredLoc = DesiredLocation;
+	PivotLocation = DesiredLocation;
+
+	// Apply third person offset using pitch.
+	if (!bUseRuntimeFloatCurves)
+	{
+		if (TargetOffsetCurve)
+		{
+			const FVector TargetOffset = TargetOffsetCurve->GetVectorValue(PivotRotation.Pitch);
+			View.Location = PivotLocation + PivotRotation.RotateVector(TargetOffset * ZoomDistanceMultiplier);
+		}
+	}
+	else
+	{
+		FVector TargetOffset(0.0f);
+
+		TargetOffset.X = TargetOffsetX.GetRichCurveConst()->Eval(PivotRotation.Pitch);
+		TargetOffset.Y = TargetOffsetY.GetRichCurveConst()->Eval(PivotRotation.Pitch);
+		TargetOffset.Z = TargetOffsetZ.GetRichCurveConst()->Eval(PivotRotation.Pitch);
+
+		View.Location = PivotLocation + PivotRotation.RotateVector(TargetOffset);
+	}
+
+	UpdatePreventPenetration(DeltaTime);
 }

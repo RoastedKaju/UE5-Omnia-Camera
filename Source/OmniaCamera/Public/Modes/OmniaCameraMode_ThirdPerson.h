@@ -24,7 +24,7 @@ public:
 
 protected:
 	virtual void OnActivation_Implementation() override;
-	
+
 	virtual void UpdateView(float DeltaTime) override;
 
 	void UpdateForTarget(float DeltaTime);
@@ -40,7 +40,7 @@ protected:
 	// UE-103986: Live editing of RuntimeFloatCurves during PIE does not work (unlike curve assets).
 	// Once that is resolved this will become the default and TargetOffsetCurve will be removed.
 	UPROPERTY(EditDefaultsOnly, Category = "Third Person")
-	bool bUseRuntimeFloatCurves;
+	uint32 bUseRuntimeFloatCurves : 1;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Third Person", Meta = (EditCondition = "bUseRuntimeFloatCurves"))
 	FRuntimeFloatCurve TargetOffsetX;
@@ -58,6 +58,54 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Third Person")
 	float CrouchOffsetBlendMultiplier = 5.0f;
 
+	/**
+	 * If true, camera lags behind target position to smooth its movement.
+	 * @see CameraLagSpeed
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Lag)
+	uint32 bEnableCameraLag : 1;
+
+	/**
+	 * If true, camera lags behind target rotation to smooth its movement.
+	 * @see CameraRotationLagSpeed
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Lag)
+	uint32 bEnableCameraRotationLag : 1;
+
+	/**
+	 * If bUseCameraLagSubstepping is true, sub-step camera damping so that it handles fluctuating frame rates well (though this comes at a cost).
+	 * @see CameraLagMaxTimeStep
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Lag, AdvancedDisplay)
+	uint32 bUseCameraLagSubstepping : 1;
+
+	/**
+	 * If true and camera location lag is enabled, draws markers at the camera target (in green) and the lagged position (in yellow).
+	 * A line is drawn between the two locations, in green normally but in red if the distance to the lag target has been clamped (by CameraLagMaxDistance).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Lag)
+	uint32 bDrawDebugLagMarkers : 1;
+
+	/** If bEnableCameraLag is true, controls how quickly camera reaches target position. Low values are slower (more lag), high values are faster (less lag), while zero is instant (no lag). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Lag, meta=(editcondition="bEnableCameraLag", ClampMin="0.0", ClampMax="1000.0", UIMin = "0.0", UIMax = "1000.0"))
+	float CameraLagSpeed;
+
+	/** If bEnableCameraRotationLag is true, controls how quickly camera reaches target position. Low values are slower (more lag), high values are faster (less lag), while zero is instant (no lag). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Lag, meta=(editcondition = "bEnableCameraRotationLag", ClampMin="0.0", ClampMax="1000.0", UIMin = "0.0", UIMax = "1000.0"))
+	float CameraRotationLagSpeed;
+
+	/** Max time step used when sub-stepping camera lag. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Lag, AdvancedDisplay, meta=(editcondition = "bUseCameraLagSubstepping", ClampMin="0.005", ClampMax="0.5", UIMin = "0.005", UIMax = "0.5"))
+	float CameraLagMaxTimeStep;
+
+	/** Max distance the camera target may lag behind the current location. If set to zero, no max distance is enforced. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Lag, meta=(editcondition="bEnableCameraLag", ClampMin="0.0", UIMin = "0.0"))
+	float CameraLagMaxDistance;
+
+	/** Temporary variables when using camera lag, to record previous camera position */
+	FVector PreviousDesiredLoc;
+	FRotator PreviousDesiredRot;
+
 	// Penetration prevention
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collision")
@@ -68,11 +116,11 @@ public:
 
 	/** If true, does collision checks to keep the camera out of the world. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collision")
-	bool bPreventPenetration = true;
+	uint32 bPreventPenetration : 1;
 
 	/** If true, try to detect nearby walls and move the camera in anticipation.  Helps prevent popping. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Collision")
-	bool bDoPredictiveAvoidance = true;
+	uint32 bDoPredictiveAvoidance : 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Collision")
 	float CollisionPushOutDistance = 2.f;
@@ -104,6 +152,8 @@ public:
 protected:
 	void SetTargetCrouchOffset(FVector NewTargetOffset);
 	void UpdateCrouchOffset(float DeltaTime);
+
+	void UpdateDesiredArmLocation(bool bDoLocationLag, bool bDoRotationLag, float DeltaTime);
 
 	FVector InitialCrouchOffset = FVector::ZeroVector;
 	FVector TargetCrouchOffset = FVector::ZeroVector;

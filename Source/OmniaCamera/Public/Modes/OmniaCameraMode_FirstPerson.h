@@ -29,11 +29,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "First Person")
 	float CrouchOffsetBlendMultiplier = 5.0f;
 
-	// Apply the offset to camera's position
 	UPROPERTY(EditDefaultsOnly, Category = "First Person")
 	bool bApplyOffset;
 
-	// Offset your First Person camera by this amount
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "First Person", meta= (EditCondition = "bApplyOffset"))
 	FVector PivotOffset;
 
