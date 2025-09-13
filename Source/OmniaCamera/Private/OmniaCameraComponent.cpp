@@ -8,8 +8,12 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "OmniaCameraMode.h"
+#include "OmniaCameraVolume.h"
+#include "Modes/OmniaCameraMode_Static.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OmniaCameraComponent)
+
+DEFINE_LOG_CATEGORY(OmniaCameraComponentLog);
 
 UOmniaCameraComponent::UOmniaCameraComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -47,13 +51,41 @@ void UOmniaCameraComponent::SetCameraMode(TSubclassOf<UOmniaCameraMode> CameraMo
 {
 	if (CameraModeClass)
 	{
-		ActiveCameraModeClass = CameraModeClass;
+		DefaultCameraModeClass = CameraModeClass;
 	}
 }
 
 void UOmniaCameraComponent::ClearCameraMode()
 {
-	ActiveCameraModeClass = nullptr;
+	DefaultCameraModeClass = nullptr;
+}
+
+void UOmniaCameraComponent::SetVolumeCameraMode(TSubclassOf<UOmniaCameraMode> CameraModeClass)
+{
+	if (CameraModeClass)
+	{
+		VolumeCameraModeClass = CameraModeClass;
+	}
+}
+
+void UOmniaCameraComponent::ClearVolumeCameraMode()
+{
+	VolumeCameraModeClass = nullptr;
+}
+
+void UOmniaCameraComponent::SetCameraVolume(AOmniaCameraVolume* CameraVolume)
+{
+	CurrentCameraVolume = CameraVolume;
+}
+
+void UOmniaCameraComponent::ClearCameraVolume()
+{
+	CurrentCameraVolume = nullptr;
+}
+
+AOmniaCameraVolume* UOmniaCameraComponent::GetCameraVolume() const
+{
+	return CurrentCameraVolume.Get();
 }
 
 void UOmniaCameraComponent::OnRegister()
@@ -112,10 +144,9 @@ void UOmniaCameraComponent::GetCameraView(float DeltaTime, FMinimalViewInfo& Des
 		DesiredView.PostProcessSettings = PostProcessSettings;
 	}
 
-
 	if (IsXRHeadTrackedCamera())
 	{
-		// In XR much of the camera behavior above is irrellevant, but the post process settings are not.
+		// In XR much of the camera behavior above is irrelevant, but the post process settings are not.
 		Super::GetCameraView(DeltaTime, DesiredView);
 	}
 }
@@ -126,21 +157,17 @@ void UOmniaCameraComponent::UpdateCameraModes()
 
 	if (CameraModeStack->IsStackActivate())
 	{
-		if (IsValid(ActiveCameraModeClass))
+		// Determine the camera mode
+		if (IsValid(VolumeCameraModeClass))
 		{
+			ActiveCameraModeClass = VolumeCameraModeClass;
 			CameraModeStack->PushCameraMode(ActiveCameraModeClass);
+			return;
 		}
-		else if(IsValid(DefaultCameraModeClass))
+		if (IsValid(DefaultCameraModeClass))
 		{
-			CameraModeStack->PushCameraMode(DefaultCameraModeClass);
-		}
-		
-		if (DetermineCameraModeDelegate.IsBound())
-		{
-			if (const TSubclassOf<UOmniaCameraMode> CameraMode = DetermineCameraModeDelegate.Execute())
-			{
-				CameraModeStack->PushCameraMode(CameraMode);
-			}
+			ActiveCameraModeClass = DefaultCameraModeClass;
+			CameraModeStack->PushCameraMode(ActiveCameraModeClass);
 		}
 	}
 }

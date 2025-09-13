@@ -7,7 +7,9 @@
 #include "Engine/Canvas.h"
 #include "GameFramework/Character.h"
 #include "OmniaCameraComponent.h"
+#include "OmniaCameraVolume.h"
 #include "OmniaPlayerCameraManager.h"
+#include "Modes/OmniaCameraMode_Static.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OmniaCameraMode)
 
@@ -284,6 +286,14 @@ void UOmniaCameraModeStack::PushCameraMode(TSubclassOf<UOmniaCameraMode> CameraM
 
 	UOmniaCameraMode* CameraMode = GetCameraModeInstance(CameraModeClass);
 	check(CameraMode);
+
+	if (UOmniaCameraMode_Static* VolumeCameraMode = Cast<UOmniaCameraMode_Static>(CameraMode))
+	{
+		if (AOmniaCameraVolume* const Volume = CameraMode->GetOmniaCameraComponent()->GetCameraVolume())
+		{
+			VolumeCameraMode->SetCameraVolume(Volume);
+		}
+	}
 
 	int32 StackSize = CameraModeStack.Num();
 

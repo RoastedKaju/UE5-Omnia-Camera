@@ -178,6 +178,7 @@ public:
 	void ActivateStack();
 	void DeactivateStack();
 
+	UFUNCTION(BlueprintPure, Category="Omnia|Camera")
 	bool IsStackActivate() const { return bIsActive; }
 
 	void PushCameraMode(TSubclassOf<UOmniaCameraMode> CameraModeClass);
@@ -190,6 +191,7 @@ public:
 	void GetBlendInfo(float& OutWeightOfTopLayer, FGameplayTag& OutTagOfTopLayer) const;
 
 protected:
+	UFUNCTION(BlueprintCallable, Category="Omnia|Camera")
 	UOmniaCameraMode* GetCameraModeInstance(TSubclassOf<UOmniaCameraMode> CameraModeClass);
 
 	void UpdateStack(float DeltaTime);
