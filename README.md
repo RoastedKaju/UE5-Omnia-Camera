@@ -23,6 +23,7 @@ Check if the Plugin is Enabled In your Project Plugin window:
 - Modular and Decoupled from GAS and Lyra related Classes.  
 - Utility Functions to Clear and Swap out Camera Modes.  
 - You can extend the **"OmniaCameraMode"** Class to make your Own Camera Modes Just by Following Any Lyra Camera Tutorial.  
+- Camera Volume with Viewpoint Reference.  
 
 ## 🎞️ Camera Modes
 
@@ -30,6 +31,7 @@ Currently This Plugin comes with the following Camera Modes:
 - First Person  
 - Third Person  
 - Death Camera  
+- Fixed View Point  
 
 There are two Vector Curves that control the Positions of Camera Veiw in Third Person and Death Camera.  
 
@@ -67,4 +69,14 @@ Inside this plugin there is a demo map in which you can try out different camera
 - You can also override the final camera view using `Blueprint Update Camera` function override, Make sure return true. This works just like Unreal's Standard Player Camera Manager.
 <p align="center">
   <img src="Docs/updateview.jpg"/>
+</p>  
+
+- To Use Camera Volumes, you can place down `AOmniaCameraVolume` using the place actors tab.
+<p align="center">
+  <img src="Docs/CameraVolume.jpg"/>
+</p>  
+
+- If your Camera Mode inherits from `UOmniaCameraMode_Static` or `UOmniaCameraMode_Fixed` You can add a reference to any view point actor and use that as a pivot point for your camera view.
+<p align="center">
+  <img src="Docs/VolumeSetup.jpg"/>
 </p>  
