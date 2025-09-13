@@ -2,7 +2,6 @@
 
 
 #include "Modes/OmniaCameraMode_ThirdPerson.h"
-
 #include "OmniaCameraMode.h"
 #include "Components/PrimitiveComponent.h"
 #include "OmniaPenetrationAvoidanceFeeler.h"
@@ -24,7 +23,7 @@ namespace OmniaCameraMode_ThirdPerson_Statics
 UOmniaCameraMode_ThirdPerson::UOmniaCameraMode_ThirdPerson()
 {
 	bPreventPenetration = true;
-	bDoPredictiveAvoidance = false;
+	bDoPredictiveAvoidance = true;
 	TargetOffsetCurve = nullptr;
 
 	PenetrationAvoidanceFeelers.Add(FOmniaPenetrationAvoidanceFeeler(FRotator(+00.0f, +00.0f, 0.0f), 1.00f, 1.00f, 14.f, 0));
@@ -352,6 +351,7 @@ void UOmniaCameraMode_ThirdPerson::UpdateDesiredArmLocation(bool bDoLocationLag,
 	FRotator PivotRotation = GetPivotRotation();
 
 	PivotRotation.Pitch = FMath::ClampAngle(PivotRotation.Pitch, ViewPitchMin, ViewPitchMax);
+	PivotRotation.Roll = 0.0f;
 
 	View.Location = PivotLocation;
 	View.Rotation = PivotRotation;

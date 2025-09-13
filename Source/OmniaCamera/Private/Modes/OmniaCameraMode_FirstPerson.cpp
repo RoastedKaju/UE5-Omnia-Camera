@@ -2,7 +2,7 @@
 
 
 #include "Modes/OmniaCameraMode_FirstPerson.h"
-
+#include "Curves/CurveVector.h"
 #include "GameFramework/Character.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(OmniaCameraMode_FirstPerson)
@@ -28,6 +28,7 @@ void UOmniaCameraMode_FirstPerson::UpdateView(float DeltaTime)
 	FRotator PivotRotation = GetPivotRotation();
 
 	PivotRotation.Pitch = FMath::ClampAngle(PivotRotation.Pitch, ViewPitchMin, ViewPitchMax);
+	PivotRotation.Roll = 0.0f;
 
 	View.Location = PivotLocation;
 	View.Rotation = PivotRotation;
